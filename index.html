@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Honey Badger Cyber Hunt — A09 Security Logging & Monitoring Lab</title>
+<style>
+  :root{
+    --brand-yellow:#ffb300;    /* header / accents */
+    --brand-brown:#3b2d1f;     /* text on yellow */
+    --ink:#222;                /* body text */
+    --muted:#666;
+    --card:#ffffff;
+    --code-bg:#1e1e1e;
+    --code-fg:#d6ffe7;
+    --hint-bg:#fff8e6;
+    --hint-border:#ffcc66;
+    --success-bg:#e8ffe8;
+    --success-border:#2ecc71;
+    --info-bg:#e6f4ff;
+    --info-border:#6aa7ff;
+    --btn:#005bbb;
+    --btn-hover:#004999;
+    --radius:14px;
+    --shadow:0 8px 30px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#fafafa; color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+  }
+  .header{
+    background:var(--brand-yellow);
+    color:var(--brand-brown);
+    padding:28px 18px;
+    display:flex; align-items:center; gap:16px;
+    position:sticky; top:0; z-index:5;
+    box-shadow:var(--shadow);
+  }
+  .header img{height:48px; width:auto}
+  .header .title{
+    font-weight:800; letter-spacing:.3px; line-height:1.2;
+  }
+  .wrap{max-width:880px; margin:28px auto; padding:0 18px 60px}
+  h1,h2{color:#0b3a5f; margin:22px 0 10px}
+  p{margin:10px 0}
+  .card{
+    background:var(--card); border-radius:var(--radius);
+    padding:18px; margin:18px 0; box-shadow:var(--shadow);
+  }
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; font-size:12px; letter-spacing:.3px}
+  .pill--info{background:#eaf2ff; color:#204a87}
+  .grid{display:grid; gap:16px}
+  @media(min-width:720px){ .grid.two{grid-template-columns:1fr 1fr} }
+  pre{
+    background:var(--code-bg); color:var(--code-fg);
+    padding:14px 14px; border-radius:10px; overflow:auto; position:relative; margin:10px 0 0;
+  }
+  pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:14px}
+  .copy{
+    position:absolute; top:10px; right:10px;
+    background:var(--btn); color:#fff; border:none; border-radius:9px;
+    padding:6px 10px; cursor:pointer; font-size:12px;
+  }
+  .copy:hover{background:var(--btn-hover)}
+  details{border-left:4px solid var(--info-border); background:var(--info-bg);
+    padding:12px 12px; border-radius:10px; margin:12px 0}
+  .hint{border-left:4px solid var(--hint-border); background:var(--hint-bg); padding:12px; border-radius:10px}
+  .success{border-left:4px solid var(--success-border); background:var(--success-bg); padding:12px; border-radius:10px}
+  .footer{margin-top:40px; text-align:center; color:var(--muted); font-size:13px}
+  .step-badge{font-weight:700; color:#0b3a5f}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <img src="honey-badger-logo.png" alt="Honey Badger Cyber Hunt logo" />
+  <div class="title">
+    <div>HONEY BADGER CYBER HUNT</div>
+    <div style="font-size:14px;opacity:.9;">A09 — Security Logging & Monitoring (Beginner Lab)</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="card">
+    <span class="pill pill--info">GOAL</span>
+    <h1>See login activity recorded in a log file — success & failure — in real time.</h1>
+    <p>No coding required. Just copy the commands, watch the “mini website” run, and view the log entries.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-badge">Step 1.</span> Set up your workspace</h2>
+    <p>Creates a safe folder and moves into it.</p>
+    <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>mkdir -p ~/myproject &amp;&amp; cd ~/myproject</code></pre>
+  </div>
+
+  <div class="card grid two">
+    <div>
+      <h2><span class="step-badge">Step 2.</span> Prepare Python</h2>
+      <p>Private sandbox + Flask web server.</p>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>python3 -m venv .myenv
+source .myenv/bin/activate
+pip install Flask</code></pre>
+    </div>
+    <div class="hint">
+      🛈 If your prompt shows <code>(.myenv)</code>, you’re in the right mode.  
+      To leave later: <code>deactivate</code>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-badge">Step 3.</span> Create the mini app</h2>
+    <p>Pastes a ready-made app that logs every login attempt to <code>~/myproject/logs/app.log</code>.</p>
+    <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>cat &gt; app.py &lt;&lt;'PY'
+from flask import Flask, request
+import os, logging
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+app = Flask(__name__)
+
+log_dir = Path.home() / "myproject" / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+handler = RotatingFileHandler(str(log_dir / "app.log"), maxBytes=1_000_000, backupCount=3)
+handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+handler.setLevel(logging.INFO)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
+
+@app.route('/')
+def home():
+    return "👋 Welcome to your A09 Lab! Try logging in below."
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    client_ip = request.remote_addr
+
+    if username == 'admin' and password == 'secret':
+        app.logger.info("login attempt user=%s ip=%s status=success", username, client_ip)
+        return "🎉 Hurray! You logged in successfully!"
+    else:
+        app.logger.info("login attempt user=%s ip=%s status=failed", username, client_ip)
+        return "❌ Oops! Login failed, please try again.", 401
+
+if __name__ == '__main__':
+    app.run(debug=True)
+PY</code></pre>
+  </div>
+
+  <div class="card grid two">
+    <div>
+      <h2><span class="step-badge">Step 4.</span> Start the app</h2>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>python3 app.py</code></pre>
+      <p>Keep this window open. You should see: <code>Running on http://127.0.0.1:5000</code></p>
+    </div>
+    <details>
+      <summary>Port already in use?</summary>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>sudo lsof -t -i:5000 | xargs kill -9</code></pre>
+    </details>
+  </div>
+
+  <div class="card grid two">
+    <div>
+      <h2><span class="step-badge">Step 5.</span> Test a successful login</h2>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>curl -i -s -X POST -d "username=admin&amp;password=secret" http://127.0.0.1:5000/login</code></pre>
+    </div>
+    <div>
+      <h2><span class="step-badge">Step 6.</span> Test a failed login</h2>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>curl -i -s -X POST -d "username=admin&amp;password=wrong" http://127.0.0.1:5000/login</code></pre>
+    </div>
+  </div>
+
+  <div class="card grid two">
+    <div>
+      <h2><span class="step-badge">Step 7.</span> View the log</h2>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>cat ~/myproject/logs/app.log</code></pre>
+      <p>You’ll see lines with time, user, IP, and status.</p>
+    </div>
+    <div>
+      <h2>Watch logs live (optional)</h2>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>tail -f ~/myproject/logs/app.log</code></pre>
+    </div>
+  </div>
+
+  <div class="card success">
+    <strong>Congrats!</strong> If your log shows both success and failure entries, you’ve completed the lab 🎉  
+    Your “flag” is the file: <code>~/myproject/logs/app.log</code>
+  </div>
+
+  <div class="card">
+    <h2>Quick help</h2>
+    <details>
+      <summary>No log file?</summary>
+      <pre><button class="copy" onclick="copyCode(this)">Copy</button><code>mkdir -p ~/myproject/logs &amp;&amp; python3 app.py</code></pre>
+    </details>
+    <details>
+      <summary>Stop the app</summary>
+      <p>Press <strong>CTRL + C</strong> in the window where it’s running.</p>
+    </details>
+  </div>
+
+  <p class="footer">© Honey Badger Cyber Hunt — Learn by doing.</p>
+</main>
+
+<script>
+  function copyCode(btn){
+    const code = btn.parentElement.querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(()=>{
+      const txt = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(()=>btn.textContent=txt, 1400);
+    });
+  }
+</script>
+
+</body>
+</html>
